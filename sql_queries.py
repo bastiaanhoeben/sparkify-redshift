@@ -44,6 +44,7 @@ CREATE TABLE staging_songs (
     num_songs INT
     artist_id VARCHAR
     artist_latitude FLOAT
+    artist_longitude FLOAT
     artist_location VARCHAR
     artist_name VARCHAR
     song_id VARCHAR
@@ -58,20 +59,55 @@ CREATE TABLE songplays (
     songplay_id IDENTITY(0,1) PRIMARY KEY
     start_time INT FOREIGN KEY REFERENCES time (start_time)
     user_id INT FOREIGN KEY REFERENCES users (user_id)
-    
+    level VARCHAR
+    song_id VARCHAR FOREIGN KEY REFERENCES songs (song_id)
+    artist_id VARCHAR FOREIGN KEY REFERENCES artists (artist_id)
+    session_id INT
+    location VARCHAR FOREIGN KEY REFERENCES artists (location)
+    user_agent VARCHAR 
 )
 """)
 
 user_table_create = ("""
+CREATE TABLE users (
+    user_id INT PRIMARY KEY
+    first_name VARCHAR
+    last_name VARCHAR
+    gender VARCHAR(1)
+    level VARCHAR
+)
 """)
 
 song_table_create = ("""
+CREATE TABLE songs (
+    song_id VARCHAR PRIMARY KEY
+    title VARCHAR
+    artist_id VARCHAR FOREIGN KEY REFERENCES artists (artist_id)
+    year INT
+    duration FLOAT
+)
 """)
 
 artist_table_create = ("""
+CREATE TABLE artists (
+    artist_id VARCHAR PRIMARY KEY
+    name VARCHAR
+    location VARCHAR
+    lattitude FLOAT
+    longitude FLOAT
+)
 """)
 
 time_table_create = ("""
+CREATE TABLE time (
+    start_time TIMESTAMP PRIMARY KEY
+    hour INT
+    day INT
+    week INT
+    month INT
+    year INT
+    weekday BOOLEAN
+)
 """)
 
 # STAGING TABLES

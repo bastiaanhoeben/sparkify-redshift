@@ -9,6 +9,8 @@ KEY=config.get('AWS', 'KEY')
 SECRET=config.get('AWS', 'SECRET')
 REGION=config.get('AWS', 'REGION')
 
+
+
 # Create clients for IAM, EC2, S3 and Redshift
 iam = boto3.resource('aim', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
 ec2 = boto3.resource('ec2', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
