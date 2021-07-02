@@ -119,42 +119,90 @@ def describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER):
     cluster_properties = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
 
     pd.set_option('display.max_colwidth', -1)
-    keys_to_show = ["ClusterIdentifier", "NodeType", "ClusterStatus", "MasterUsername", "DBName", "Endpoint", "NumberOfNodes", 'VpcId']
+    keys_to_show = ["ClusterIdentifier", "NodeType", "ClusterStatus", "MasterUsername", "DBName", "Endpoint", "NumberOfNodes", "VpcId"]
     x = [(k, v) for k,v in cluster_properties.items() if k in keys_to_show]
-    print(pd.DataFrame(data=x, columns=["Key", "Value"]))
+    status_table = pd.DataFrame(data=x, columns=["Key", "Value"])
+    print(status_table)
 
 
-# Print cluster endpoint and role ARN
-DWH_ENDPOINT = myClusterProps['Endpoint']['Address']
-DWH_ROLE_ARN = myClusterProps['IamRoles'][0]['IamRoleArn']
-print("DWH_ENDPOINT :: ", DWH_ENDPOINT)
-print("DWH_ROLE_ARN :: ", DWH_ROLE_ARN)
+def get_cluster_endpoint(redshift, DWH_CLUSTER_IDENTIFIER):
+    """
+    Get Redshift cluster endpoint and print role ARN.
+    
+        Parameters:
+            redshift: Redshift instance
+            DWH_CLUSTER_IDENTIFIER: Redshift cluster identifier
 
-# Open VPC TCP port to access cluster endpoint
- try:
-    vpc = ec2.Vpc(id=myClusterProps['VpcId'])
-    defaultSg = list(vpc.security_groups.all())[0]
-    print(defaultSg)
-    defaultSg.authorize_ingress(
-        GroupName=defaultSg.group_name,
-        CidrIp='0.0.0.0/0',
-        IpProtocol='TCP',
-        FromPort=int(DWH_PORT),
-        ToPort=int(DWH_PORT)
-    )
-except Exception as e:
-    print(e)
+        Returns:
+            dwh_endpoint: Redshift cluster endpoint    
+    """
 
-# Delete Redshift cluster
-redshift.delete_cluster( ClusterIdentifier=DWH_CLUSTER_IDENTIFIER,  SkipFinalClusterSnapshot=True)
+    cluster_properties = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
 
-# Describe Redshift cluster to see its status
-myClusterProps = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
-prettyRedshiftProps(myClusterProps)
+    dwh_endpoint = cluster_properties['Endpoint']['Address']
+    dwh_role_arn = cluster_properties['IamRoles'][0]['IamRoleArn']
 
-# Detach role policy and delete role
-iam.detach_role_policy(RoleName=DWH_IAM_ROLE_NAME, PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")
-iam.delete_role(RoleName=DWH_IAM_ROLE_NAME)
+    print("Redshift cluster endpoint: " + dwh_endpoint)
+    print("Redshift Role ARN: " + dwh_role_arn)
+
+    return dwh_endpoint
+
+
+def open_vpc_ports(ec2, redshift, DWH_CLUSTER_IDENTIFIER, DB_PORT):
+    """
+    Open VPC TCP port to access cluster endpoint.
+    
+        Parameters:
+            ec2: EC2 instance
+            redshift: Redshift instance
+            DWH_CLUSTER_IDENTIFIER: Redshift cluster identifier
+            DB_PORT: Redshift standard port
+    """
+
+    cluster_properties = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
+
+    try:
+        vpc = ec2.Vpc(id=cluster_properties['VpcId'])
+        default_sg = list(vpc.security_groups.all())[0]
+        print("Default security group: " + default_sg)
+        default_sg.authorize_ingress(
+            GroupName=default_sg.group_name,
+            CidrIp='0.0.0.0/0',
+            IpProtocol='TCP',
+            FromPort=int(DB_PORT),
+            ToPort=int(DB_PORT)
+        )
+    except Exception as e:
+        print(e)
+
+    print(f"Port {DB_PORT} opened")
+
+
+def delete_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER):
+    """
+    Delete Redshift cluster.
+
+        Parameters:
+            redshift: Redshift instance
+            DWH_CLUSTER_IDENTIFIER: Redshift cluster identifier
+    """
+
+    # Delete cluster
+    redshift.delete_cluster(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER,  SkipFinalClusterSnapshot=True)
+
+
+def delete_iam_role(iam, IAM_ROLE_NAME):
+    """
+    Detach role policy and delete role.
+        
+        Parameters:
+            iam: iam client
+            IAM_ROLE_NAME: IAM role name
+    """
+    
+    iam.detach_role_policy(RoleName=IAM_ROLE_NAME, PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")
+
+    iam.delete_role(RoleName=IAM_ROLE_NAME)
 
 
 def main():
@@ -174,7 +222,6 @@ def main():
     DWH_NODE_TYPE=config.get('DWH', 'DWH_NODE_TYPE')
     DWH_CLUSTER_IDENTIFIER=config.get('DWH', 'DWH_CLUSTER_IDENTIFIER')
 
-    HOST=config.get('DB', 'HOST')
     DB_NAME=config.get('DB', 'DB_NAME')
     DB_USER=config.get('DB', 'DB_USER')
     DB_PASSWORD=config.get('DB', 'DB_PASSWORD')
@@ -186,7 +233,38 @@ def main():
     create_redshift_cluster(redshift, role_arn, DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_NUM_NODES, DWH_CLUSTER_IDENTIFIER, DB_NAME, DB_USER, DB_PASSWORD)
 
     # Print cluster status
+    while True:
+        user_input = input("Print cluster status? (y/n): ")
+        if user_input == "y":
+            describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
+        else:
+            break
     
+    # Get cluster endpoint
+    dwh_endpoint = get_cluster_endpoint(redshift, DWH_CLUSTER_IDENTIFIER)
+
+    # Open redshift port for all inbound traffic
+    open_vpc_ports(ec2, redshift, DWH_CLUSTER_IDENTIFIER, DB_PORT)
+
+    # Delete redshift cluster
+    while True:
+        user_input = input("Delete cluster? (y/n): ")
+        if user_input == "y":
+            delete_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
+        else:
+            break
+    
+    # Print cluster status
+    while True:
+        user_input = input("Print cluster status? (y/n): ")
+        if user_input == "y":
+            describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
+        else:
+            break
+
+    # Delete IAM role for Reshift cluster
+    delete_iam_role(iam, IAM_ROLE_NAME)
+
 
 if __name__ == "__main__":
     main()
