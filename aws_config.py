@@ -59,13 +59,13 @@ def create_iam_role(iam, IAM_ROLE_NAME):
     
     # Attach a role policy
     print("Attaching role policy")
-    iam.attach_role_policy(RoleName=IAM_ROLE_NAME,
-                        PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
-                        )['ResponseMetadata']['HTTPStatusCode']
+    attach_response = iam.attach_role_policy(RoleName=IAM_ROLE_NAME,PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")['ResponseMetadata']['HTTPStatusCode']
+    print("Status of role policy attachment: " + attach_response)
 
+    # Get IAM role ARN
     print("Get the IAM role ARN")
     role_arn = iam.get_role(RoleName=IAM_ROLE_NAME)['Role']['Arn']
-    print(role_arn)
+    print("Role_ARN: " + role_arn)
 
     return role_arn
 
