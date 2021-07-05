@@ -125,7 +125,7 @@ def describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER):
     print(status_table)
 
 
-def get_cluster_endpoint(redshift, DWH_CLUSTER_IDENTIFIER):
+def get_cluster_endpoint(REGION, KEY, SECRET, DWH_CLUSTER_IDENTIFIER):
     """
     Get Redshift cluster endpoint and print role ARN.
     
@@ -136,6 +136,8 @@ def get_cluster_endpoint(redshift, DWH_CLUSTER_IDENTIFIER):
         Returns:
             dwh_endpoint: Redshift cluster endpoint    
     """
+
+    redshift = boto3.client('redshift', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
 
     cluster_properties = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
 
@@ -244,7 +246,7 @@ def main():
             break
     
     # Get cluster endpoint
-    dwh_endpoint = get_cluster_endpoint(redshift, DWH_CLUSTER_IDENTIFIER)
+    dwh_endpoint = get_cluster_endpoint(REGION, KEY, SECRET, DWH_CLUSTER_IDENTIFIER)
 
     # Open redshift port for all inbound traffic
     open_vpc_ports(ec2, redshift, DWH_CLUSTER_IDENTIFIER, DB_PORT)
