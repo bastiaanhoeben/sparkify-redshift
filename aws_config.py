@@ -263,6 +263,7 @@ def main():
             try:
                 describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
             except:
+                print("Cluster deleted")
                 break
         else:
             break
