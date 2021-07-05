@@ -20,10 +20,11 @@ def create_clients(KEY, SECRET, REGION):
     """
 
     # Create clients
-    iam = boto3.resource('aim', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
+    iam = boto3.client('iam', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
     ec2 = boto3.resource('ec2', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
     s3 = boto3.resource('s3', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
-    redshift = boto3.resource('redshift', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
+    redshift = boto3.client('redshift', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
+    print("IAM, EC2, S3 and Redshift clients created")
 
     return iam, ec2, s3, redshift
 
@@ -60,17 +61,17 @@ def create_iam_role(iam, IAM_ROLE_NAME):
     # Attach a role policy
     print("Attaching role policy")
     attach_response = iam.attach_role_policy(RoleName=IAM_ROLE_NAME,PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")['ResponseMetadata']['HTTPStatusCode']
-    print("Status of role policy attachment: " + attach_response)
+    print(f"Status of role policy attachment: {attach_response}")
 
     # Get IAM role ARN
     print("Get the IAM role ARN")
     role_arn = iam.get_role(RoleName=IAM_ROLE_NAME)['Role']['Arn']
-    print("Role_ARN: " + role_arn)
+    print(f"Role_ARN: {role_arn}")
 
     return role_arn
 
 
-def create_redshift_cluster(redshift, role_arn, DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_NUM_NODES, DWH_CLUSTER_IDENTIFIER, DB_NAME, DB_USER, DB_PASSWORD):
+def create_redshift_cluster(redshift, role_arn, DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_CLUSTER_IDENTIFIER, DB_NAME, DB_USER, DB_PASSWORD):
     """
     Creates a Redshift cluster.
         
@@ -92,7 +93,6 @@ def create_redshift_cluster(redshift, role_arn, DWH_CLUSTER_TYPE, DWH_NODE_TYPE,
             #DHW
             ClusterType=DWH_CLUSTER_TYPE,
             NodeType=DWH_NODE_TYPE,
-            NumberOfNodes=int(DWH_NUM_NODES),
 
             #Identifiers & Credentials
             DBName=DB_NAME,
@@ -118,7 +118,7 @@ def describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER):
 
     cluster_properties = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
 
-    pd.set_option('display.max_colwidth', -1)
+    pd.set_option('display.max_colwidth', None)
     keys_to_show = ["ClusterIdentifier", "NodeType", "ClusterStatus", "MasterUsername", "DBName", "Endpoint", "NumberOfNodes", "VpcId"]
     x = [(k, v) for k,v in cluster_properties.items() if k in keys_to_show]
     status_table = pd.DataFrame(data=x, columns=["Key", "Value"])
@@ -142,8 +142,8 @@ def get_cluster_endpoint(redshift, DWH_CLUSTER_IDENTIFIER):
     dwh_endpoint = cluster_properties['Endpoint']['Address']
     dwh_role_arn = cluster_properties['IamRoles'][0]['IamRoleArn']
 
-    print("Redshift cluster endpoint: " + dwh_endpoint)
-    print("Redshift Role ARN: " + dwh_role_arn)
+    print(f"Redshift cluster endpoint: {dwh_endpoint}")
+    print(f"Redshift Role ARN: {dwh_role_arn}")
 
     return dwh_endpoint
 
@@ -164,7 +164,7 @@ def open_vpc_ports(ec2, redshift, DWH_CLUSTER_IDENTIFIER, DB_PORT):
     try:
         vpc = ec2.Vpc(id=cluster_properties['VpcId'])
         default_sg = list(vpc.security_groups.all())[0]
-        print("Default security group: " + default_sg)
+        print(f"Default security group: {default_sg}")
         default_sg.authorize_ingress(
             GroupName=default_sg.group_name,
             CidrIp='0.0.0.0/0',
@@ -189,6 +189,7 @@ def delete_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER):
 
     # Delete cluster
     redshift.delete_cluster(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER,  SkipFinalClusterSnapshot=True)
+    print("Deleting Redshift cluster")
 
 
 def delete_iam_role(iam, IAM_ROLE_NAME):
@@ -203,6 +204,7 @@ def delete_iam_role(iam, IAM_ROLE_NAME):
     iam.detach_role_policy(RoleName=IAM_ROLE_NAME, PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")
 
     iam.delete_role(RoleName=IAM_ROLE_NAME)
+    print("IAM Role deleted")
 
 
 def main():
@@ -227,10 +229,11 @@ def main():
     DB_PASSWORD=config.get('DB', 'DB_PASSWORD')
     DB_PORT=config.get('DB', 'DB_PORT')
 
-    # Configure Redshift cluster
+     # Configure Redshift cluster
     iam, ec2, s3, redshift = create_clients(KEY, SECRET, REGION)
+    delete_iam_role(iam, IAM_ROLE_NAME)  # Delete any old iam role
     role_arn = create_iam_role(iam, IAM_ROLE_NAME)
-    create_redshift_cluster(redshift, role_arn, DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_NUM_NODES, DWH_CLUSTER_IDENTIFIER, DB_NAME, DB_USER, DB_PASSWORD)
+    create_redshift_cluster(redshift, role_arn, DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_CLUSTER_IDENTIFIER, DB_NAME, DB_USER, DB_PASSWORD)
 
     # Print cluster status
     while True:
@@ -248,17 +251,19 @@ def main():
 
     # Delete redshift cluster
     while True:
-        user_input = input("Delete cluster? (y/n): ")
+        user_input = input('Delete cluster? (Please type "y" to delete): ')
         if user_input == "y":
             delete_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
-        else:
             break
     
     # Print cluster status
     while True:
         user_input = input("Print cluster status? (y/n): ")
         if user_input == "y":
-            describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
+            try:
+                describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
+            except:
+                break
         else:
             break
 
