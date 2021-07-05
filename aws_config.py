@@ -114,6 +114,9 @@ def describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER):
         Parameters:
             redshift: Redshift client
             DWH_CLUSTER_IDENTIFIER: Redshift cluster identifier
+
+        Returns:
+            status_table: Redshift cluster status table
     """
 
     cluster_properties = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
@@ -122,7 +125,8 @@ def describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER):
     keys_to_show = ["ClusterIdentifier", "NodeType", "ClusterStatus", "MasterUsername", "DBName", "Endpoint", "NumberOfNodes", "VpcId"]
     x = [(k, v) for k,v in cluster_properties.items() if k in keys_to_show]
     status_table = pd.DataFrame(data=x, columns=["Key", "Value"])
-    print(status_table)
+    
+    return status_table
 
 
 def get_cluster_endpoint(REGION, KEY, SECRET, DWH_CLUSTER_IDENTIFIER):
@@ -239,11 +243,12 @@ def main():
 
     # Print cluster status
     while True:
-        user_input = input("Print cluster status? (y/n): ")
+        user_input = input('Type "y" to print cluster status: ')
         if user_input == "y":
-            describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
-        else:
-            break
+            status_table = describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
+            print(status_table)
+            if status_table.iloc[2, 1] == 'available':
+                break
     
     # Get cluster endpoint
     dwh_endpoint = get_cluster_endpoint(REGION, KEY, SECRET, DWH_CLUSTER_IDENTIFIER)
@@ -253,22 +258,21 @@ def main():
 
     # Delete redshift cluster
     while True:
-        user_input = input('Delete cluster? (Please type "y" to delete): ')
+        user_input = input('Type "y" to delete cluster: ')
         if user_input == "y":
             delete_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
             break
     
     # Print cluster status
     while True:
-        user_input = input("Print cluster status? (y/n): ")
+        user_input = input('Type "y" to print cluster status: ')
         if user_input == "y":
             try:
-                describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
+                status_table = describe_redshift_cluster(redshift, DWH_CLUSTER_IDENTIFIER)
+                print(status_table)
             except:
                 print("Cluster deleted")
                 break
-        else:
-            break
 
     # Delete IAM role for Reshift cluster
     delete_iam_role(iam, IAM_ROLE_NAME)
