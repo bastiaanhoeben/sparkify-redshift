@@ -231,9 +231,9 @@ def main():
     DB_PASSWORD=config.get('DB', 'DB_PASSWORD')
     DB_PORT=config.get('DB', 'DB_PORT')
 
-     # Configure Redshift cluster
+    # Configure Redshift cluster
     iam, ec2, s3, redshift = create_clients(KEY, SECRET, REGION)
-    delete_iam_role(iam, IAM_ROLE_NAME)  # Delete any old iam role
+    # delete_iam_role(iam, IAM_ROLE_NAME)  # Delete any old iam role
     role_arn = create_iam_role(iam, IAM_ROLE_NAME)
     create_redshift_cluster(redshift, role_arn, DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_CLUSTER_IDENTIFIER, DB_NAME, DB_USER, DB_PASSWORD)
 
