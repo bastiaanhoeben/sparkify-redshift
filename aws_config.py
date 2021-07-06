@@ -29,7 +29,7 @@ def create_clients(KEY, SECRET, REGION):
     return iam, ec2, s3, redshift
 
 
-def create_iam_role(REGION, KEY, SECRET, IAM_ROLE_NAME):
+def create_iam_role(iam, IAM_ROLE_NAME):
     """
     Creates a new IAM role for accessing S3 bucket.
     
@@ -39,12 +39,8 @@ def create_iam_role(REGION, KEY, SECRET, IAM_ROLE_NAME):
         
         Returns:
             role_arn: Role ARN (Amazon Resource Name)
-    
     """
     
-    # Create an IAM client
-    iam = boto3.client('iam', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
-
     # Creating a new IAM Role
     try:
         print("Creating a new IAM role")
@@ -66,10 +62,26 @@ def create_iam_role(REGION, KEY, SECRET, IAM_ROLE_NAME):
     attach_response = iam.attach_role_policy(RoleName=IAM_ROLE_NAME,PolicyArn="arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess")['ResponseMetadata']['HTTPStatusCode']
     print(f"Status of role policy attachment: {attach_response}")
 
-    # Get IAM role ARN
+
+def get_role_arn(REGION, KEY, SECRET, IAM_ROLE_NAME):
+    """
+    Graps the IAM role ARN.
+            
+        Parameters:
+            REGION: AWS region
+            KEY, SECRET: AWS admin credentials
+            IAM_ROLE_NAME: IAM role name
+        
+        Returns:
+            role_arn: Role ARN (Amazon Resource Name)
+    """
+
+    # Create an IAM client
+    iam = boto3.client('iam', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
+
     print("Get the IAM role ARN")
     role_arn = iam.get_role(RoleName=IAM_ROLE_NAME)['Role']['Arn']
-    print(f"Role_ARN: {role_arn}")
+    print(f"Role ARN: {role_arn}")
 
     return role_arn
 
@@ -241,7 +253,8 @@ def main():
     # Configure Redshift cluster
     iam, ec2, s3, redshift = create_clients(KEY, SECRET, REGION)
     # delete_iam_role(iam, IAM_ROLE_NAME)  # Delete any old iam role
-    role_arn = create_iam_role(REGION, KEY, SECRET, IAM_ROLE_NAME)
+    create_iam_role(iam, IAM_ROLE_NAME)
+    role_arn = get_role_arn(REGION, KEY, SECRET, IAM_ROLE_NAME)
     create_redshift_cluster(redshift, role_arn, DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_CLUSTER_IDENTIFIER, DB_NAME, DB_USER, DB_PASSWORD)
 
     # Print cluster status
