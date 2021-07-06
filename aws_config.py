@@ -29,7 +29,7 @@ def create_clients(KEY, SECRET, REGION):
     return iam, ec2, s3, redshift
 
 
-def create_iam_role(iam, IAM_ROLE_NAME):
+def create_iam_role(REGION, KEY, SECRET, IAM_ROLE_NAME):
     """
     Creates a new IAM role for accessing S3 bucket.
     
@@ -42,6 +42,9 @@ def create_iam_role(iam, IAM_ROLE_NAME):
     
     """
     
+    # Create an IAM client
+    iam = boto3.client('iam', region_name=REGION, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
+
     # Creating a new IAM Role
     try:
         print("Creating a new IAM role")
@@ -238,7 +241,7 @@ def main():
     # Configure Redshift cluster
     iam, ec2, s3, redshift = create_clients(KEY, SECRET, REGION)
     # delete_iam_role(iam, IAM_ROLE_NAME)  # Delete any old iam role
-    role_arn = create_iam_role(iam, IAM_ROLE_NAME)
+    role_arn = create_iam_role(REGION, KEY, SECRET, IAM_ROLE_NAME)
     create_redshift_cluster(redshift, role_arn, DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_CLUSTER_IDENTIFIER, DB_NAME, DB_USER, DB_PASSWORD)
 
     # Print cluster status
