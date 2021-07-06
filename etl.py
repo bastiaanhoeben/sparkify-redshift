@@ -1,6 +1,6 @@
 import configparser
 import psycopg2
-from sql_queries import copy_table_queries, insert_table_queries
+from sql_queries import copy_table_queries
 from aws_config import get_cluster_endpoint
 
 
@@ -27,13 +27,13 @@ def main():
 
     DB_NAME, DB_USER, DB_PASSWORD, DB_PORT = config['DB'].values()
 
-    HOST=get_cluster_endpoint(REGION, KEY, SECRET, DWH_CLUSTER_IDENTIFIER)
+    host = get_cluster_endpoint(REGION, KEY, SECRET, DWH_CLUSTER_IDENTIFIER)
 
-    conn = psycopg2.connect(f"host={HOST} dbname={DB_NAME} user={DB_USER} password={DB_PASSWORD} port={DB_PORT}")
+    conn = psycopg2.connect(f"host={host} dbname={DB_NAME} user={DB_USER} password={DB_PASSWORD} port={DB_PORT}")
     cur = conn.cursor()
     
     load_staging_tables(cur, conn)
-    insert_tables(cur, conn)
+    # insert_tables(cur, conn)
 
     conn.close()
 

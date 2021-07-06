@@ -1,9 +1,16 @@
 import configparser
+from aws_config import create_iam_role, get_role_arn
 
 
 # CONFIG
 config = configparser.ConfigParser()
 config.read('dwh.cfg')
+
+LOG_DATA, LOG_JSONPATH, SONG_DATA = config['S3'].values()
+KEY, SECRET, REGION = config['AWS'].values()
+IAM_ROLE_NAME = config.get('IAM_ROLE', 'IAM_ROLE_NAME')
+role_arn = get_role_arn(REGION, KEY, SECRET, IAM_ROLE_NAME)
+
 
 # DROP TABLES
 
@@ -25,7 +32,7 @@ CREATE TABLE staging_events (
     gender VARCHAR(1),
     ItemInSession INT,
     lastName VARCHAR,
-    lenght FLOAT,
+    length FLOAT,
     level VARCHAR,
     location VARCHAR,
     method VARCHAR,
@@ -34,9 +41,9 @@ CREATE TABLE staging_events (
     sessionId INT,
     song VARCHAR,
     status INT,
-    ts INT,
+    ts BIGINT,
     userAgent VARCHAR,
-    userID INT
+    userId VARCHAR
 )
 """)
 
@@ -119,18 +126,25 @@ CREATE TABLE time (
 """)
 
 # STAGING TABLES
-'''
+
 staging_events_copy = ("""
-COPY {} FROM 's3://udacity-dend/log_data'
-CREDENTIALS 'aws_iam_role={}'
-json region 'us-west-2'
-""").format()
+COPY staging_events 
+FROM {}
+IAM_ROLE '{}'
+REGION '{}'
+JSON {};
+""").format(LOG_DATA, role_arn, REGION, LOG_JSONPATH)
 
 staging_songs_copy = ("""
-""").format()
+COPY staging_songs
+FROM {}
+IAM_ROLE '{}'
+REGION '{}'
+JSON 'auto';
+""").format(SONG_DATA, role_arn, REGION)
 
 # FINAL TABLES
-
+'''
 songplay_table_insert = ("""
 """)
 
@@ -152,7 +166,5 @@ time_table_insert = ("""
 create_table_queries = [staging_events_table_create, staging_songs_table_create, user_table_create, artist_table_create, song_table_create, time_table_create, songplay_table_create]
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
 
-"""
 copy_table_queries = [staging_events_copy, staging_songs_copy]
-insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
-"""
+# insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
