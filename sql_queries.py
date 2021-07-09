@@ -64,8 +64,8 @@ CREATE TABLE staging_songs (
 songplay_table_create = ("""
 CREATE TABLE songplays (
     songplay_id INT IDENTITY(0,1),
-    start_time INT,
-    user_id INT,
+    start_time TIMESTAMP,
+    user_id VARCHAR,
     level VARCHAR,
     song_id VARCHAR,
     artist_id VARCHAR,
@@ -82,7 +82,7 @@ CREATE TABLE songplays (
 
 user_table_create = ("""
 CREATE TABLE users (
-    user_id INT PRIMARY KEY,
+    user_id VARCHAR PRIMARY KEY,
     first_name VARCHAR,
     last_name VARCHAR,
     gender VARCHAR(1),
@@ -155,7 +155,7 @@ INSERT INTO songplays (
     location,
     user_agent
 )
-SELECT 
+SELECT DISTINCT
     TIMESTAMP 'epoch' + e.ts/1000 * INTERVAL '1 second',
     e.userId,
     e.level,
@@ -217,17 +217,12 @@ SELECT DISTINCT
     artist_id,
     artist_name,
     artist_location,
-    latitude,
-    longitude
-FROM stagings_songs
+    artist_latitude,
+    artist_longitude
+FROM staging_songs
 """)
 
 time_table_insert = ("""
-WITH cte AS
-(
-    SELECT DISTINCT TIMESTAMP 'epoch' + ts/1000 * INTERVAL '1 second' AS clean_timestamp
-    FROM staging_events
-)
 INSERT INTO time (
     start_time,
     hour,
@@ -236,6 +231,11 @@ INSERT INTO time (
     month,
     year,
     weekday
+)
+WITH cte AS
+(
+    SELECT DISTINCT TIMESTAMP 'epoch' + ts/1000 * INTERVAL '1 second' AS clean_timestamp
+    FROM staging_events
 )
 SELECT DISTINCT
     clean_timestamp,
