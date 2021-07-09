@@ -11,7 +11,6 @@ KEY, SECRET, REGION = config['AWS'].values()
 IAM_ROLE_NAME = config.get('IAM_ROLE', 'IAM_ROLE_NAME')
 role_arn = get_role_arn(REGION, KEY, SECRET, IAM_ROLE_NAME)
 
-
 # DROP TABLES
 
 staging_events_table_drop = "DROP TABLE IF EXISTS staging_events"
@@ -144,22 +143,110 @@ JSON 'auto';
 """).format(SONG_DATA, role_arn, REGION)
 
 # FINAL TABLES
-'''
+
 songplay_table_insert = ("""
+INSERT INTO songplays (
+    start_time,
+    user_id,
+    level,
+    song_id,
+    artist_id,
+    session_id,
+    location,
+    user_agent
+)
+SELECT 
+    TIMESTAMP 'epoch' + e.ts/1000 * INTERVAL '1 second',
+    e.userId,
+    e.level,
+    s.song_id,
+    s.artist_id,
+    e.sessionId,
+    e.location,
+    e.userAgent
+FROM staging_events AS e
+    INNER JOIN staging_songs AS s
+    ON e.artist = s.artist_name
+    AND e.song = s.title
+WHERE e.page = 'NextSong'
 """)
 
 user_table_insert = ("""
+INSERT INTO users (
+    user_id,
+    first_name,
+    last_name,
+    gender,
+    level
+)
+SELECT DISTINCT
+    userId,
+    firstName,
+    lastName,
+    gender,
+    level
+FROM staging_events
 """)
 
 song_table_insert = ("""
+INSERT INTO songs (
+    song_id,
+    title,
+    artist_id,
+    year,
+    duration
+)
+SELECT DISTINCT
+    song_id,
+    title,
+    artist_id,
+    year,
+    duration
+FROM staging_songs
 """)
 
 artist_table_insert = ("""
+INSERT INTO artists (
+    artist_id,
+    name,
+    location,
+    lattitude,
+    longitude
+)
+SELECT DISTINCT
+    artist_id,
+    artist_name,
+    artist_location,
+    latitude,
+    longitude
+FROM stagings_songs
 """)
 
 time_table_insert = ("""
+WITH cte AS
+(
+    SELECT DISTINCT TIMESTAMP 'epoch' + ts/1000 * INTERVAL '1 second' AS clean_timestamp
+    FROM staging_events
+)
+INSERT INTO time (
+    start_time,
+    hour,
+    day,
+    week,
+    month,
+    year,
+    weekday
+)
+SELECT DISTINCT
+    clean_timestamp,
+    EXTRACT(HOUR FROM clean_timestamp),
+    EXTRACT(DAY FROM clean_timestamp),
+    EXTRACT(WEEK FROM clean_timestamp),
+    EXTRACT(MONTH FROM clean_timestamp),
+    EXTRACT(YEAR FROM clean_timestamp),
+    EXTRACT(DOW FROM clean_timestamp)
+FROM cte
 """)
-'''
 
 # QUERY LISTS
 
@@ -167,4 +254,4 @@ create_table_queries = [staging_events_table_create, staging_songs_table_create,
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
 
 copy_table_queries = [staging_events_copy, staging_songs_copy]
-# insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
+insert_table_queries = [user_table_insert, artist_table_insert, time_table_insert, song_table_insert, songplay_table_insert]
