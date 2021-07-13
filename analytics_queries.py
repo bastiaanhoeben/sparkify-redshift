@@ -33,7 +33,7 @@ analytics_queries = [top_artists, level_plays]
 
 
 def run_analytics_queries(cur, conn):
-    """Successively runs analytic queries."""
+    """Successively runs analytic queries and print results to stdout."""
     
     output = []
 
