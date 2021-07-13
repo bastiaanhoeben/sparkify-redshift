@@ -1,5 +1,3 @@
-# Example analytics queries
-
 import configparser
 import psycopg2
 from aws_config import get_cluster_endpoint
