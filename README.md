@@ -21,6 +21,48 @@ The project furthermore contains a configuration document - **template.cfg** - f
 
 The raw data to be housed in the data warehouse comprises two datasets: a song dataset and a log dataset. The song dataset consists files in JSON format, each containing metadata about a song. The log dataset consists of log files in JSON format containing app activity logs from a music streaming app.
 
+#### Song data format
+The JSON files of the song dataset adhere to the following format:
+```
+{
+    "num_songs": 1, 
+    "artist_id":ARJIE2Y1187B994AB7"
+    "artist_latitude": null,
+    "artist_longitude": null,
+    "artist_location": "", 
+    "artist_name": "Line Renaud", 
+    "song_id": "SOUPIRU12A6D4FA1E1"
+    "title": "Der Kleine Dompfaff"
+    "duration": 152.92036, 
+    "year": 0
+}
+```
+
+#### Log data format
+The JSON files of the log (events) dataset contain entries (rows) that adhere to the following format:
+```
+{
+    "artist":null,
+    "auth":"Logged In",
+    "firstName":"Walter",
+    "gender":"M",
+    "itemInSession":0,
+    "lastName":"Frye",
+    "length":null,
+    "level":"free",
+    "location":"San Francisco-Oakland-Hayward, CA",
+    "method":"GET",
+    "page":"Home",
+    "registration":1540919166796.0,
+    "sessionId":38,
+    "song":null,"status":200,
+    "ts":1541105830796,
+    "userAgent":"\"Mozilla\/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/36.0.1985.143 Safari\/537.36\"",
+    "userId":"39"
+}
+```
+
+
 ### Data model
 
 The data is modelled according to the start schema depicted below. The songplays table hereby constitutes the fact table, while the users, artists, songs and time tables are the dimensional tables.
