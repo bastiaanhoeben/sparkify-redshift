@@ -2,9 +2,19 @@
 
 ### About the project
 
+In this project, data from a fictive streaming music company "Sparkify" is retrieved from AWS S3 storage, processed and written to an AWS Redshift data warehouse. Redshift hereby enables easy querying of the data for analysis purposes. This project is part of the Udacity nanodegree Data Engineering.
+
 ### Overview
 
+The project contains five python scripts, being:
 
+- **aws_config.py**, containing a script and functions to configure the AWS infrastructure. In particular, said script creates an IAM role for accessing S3 storage, starts a Redshift cluster and sets firewall rules for the VPC to enable remote access to the database;
+- **sql_queries.py**, containing all SQL queries for creating the tables and inserting the data into the tables;
+- **create_tables.py**, containing a script for executing the SQL create table queries;
+- **etl.py**, containing a script for executing the SQL copy and insert queries; and
+- **analytics_queries.py**, containing two example analytics queries and a script for executing said queries against the Redshift engine.
+
+The project furthermore contains a configuration document - **template.cfg** - from which configuration parameters are read. Said document must be supplemented with the missing parameters before execution of the above scripts.
 
 
 ### Raw datasets
