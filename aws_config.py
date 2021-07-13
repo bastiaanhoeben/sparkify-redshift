@@ -161,10 +161,10 @@ def get_cluster_endpoint(REGION, KEY, SECRET, DWH_CLUSTER_IDENTIFIER):
     cluster_properties = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
 
     dwh_endpoint = cluster_properties['Endpoint']['Address']
-    dwh_role_arn = cluster_properties['IamRoles'][0]['IamRoleArn']
+    # dwh_role_arn = cluster_properties['IamRoles'][0]['IamRoleArn']
 
     print(f"Redshift cluster endpoint: {dwh_endpoint}")
-    print(f"Redshift Role ARN: {dwh_role_arn}")
+    # print(f"Redshift Role ARN: {dwh_role_arn}")
 
     return dwh_endpoint
 
