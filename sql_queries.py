@@ -64,14 +64,14 @@ CREATE TABLE staging_songs (
 songplay_table_create = ("""
 CREATE TABLE songplays (
     songplay_id INT IDENTITY(0,1),
-    start_time TIMESTAMP,
-    user_id VARCHAR,
-    level VARCHAR,
-    song_id VARCHAR,
-    artist_id VARCHAR,
-    session_id INT,
-    location VARCHAR,
-    user_agent VARCHAR,
+    start_time TIMESTAMP NOT NULL,
+    user_id VARCHAR NOT NULL,
+    level VARCHAR NOT NULL,
+    song_id VARCHAR NOT NULL,
+    artist_id VARCHAR NOT NULL,
+    session_id INT NOT NULL,
+    location VARCHAR NOT NULL,
+    user_agent VARCHAR NOT NULL,
     PRIMARY KEY (songplay_id),
     FOREIGN KEY (start_time) REFERENCES time (start_time),
     FOREIGN KEY (user_id) REFERENCES users (user_id),
@@ -83,20 +83,20 @@ CREATE TABLE songplays (
 user_table_create = ("""
 CREATE TABLE users (
     user_id VARCHAR PRIMARY KEY,
-    first_name VARCHAR,
-    last_name VARCHAR,
-    gender VARCHAR(1),
-    level VARCHAR
+    first_name VARCHAR NOT NULL,
+    last_name VARCHAR NOT NULL,
+    gender VARCHAR(1) NOT NULL,
+    level VARCHAR NOT NULL
 )
 """)
 
 song_table_create = ("""
 CREATE TABLE songs (
     song_id VARCHAR PRIMARY KEY,
-    title VARCHAR,
-    artist_id VARCHAR,
-    year INT,
-    duration FLOAT,
+    title VARCHAR NOT NULL,
+    artist_id VARCHAR NOT NULL,
+    year INT NOT NULL,
+    duration FLOAT NOT NULL,
     FOREIGN KEY (artist_id) REFERENCES artists (artist_id)
 )
 """)
@@ -104,8 +104,8 @@ CREATE TABLE songs (
 artist_table_create = ("""
 CREATE TABLE artists (
     artist_id VARCHAR,
-    name VARCHAR,
-    location VARCHAR,
+    name VARCHAR NOT NULL,
+    location VARCHAR NOT NULL,
     lattitude FLOAT,
     longitude FLOAT,
     PRIMARY KEY (artist_id)
@@ -186,6 +186,7 @@ SELECT DISTINCT
     gender,
     level
 FROM staging_events
+WHERE page = 'NextSong'
 """)
 
 song_table_insert = ("""
@@ -236,6 +237,7 @@ WITH cte AS
 (
     SELECT DISTINCT TIMESTAMP 'epoch' + ts/1000 * INTERVAL '1 second' AS clean_timestamp
     FROM staging_events
+    WHERE page = 'NextSong'
 )
 SELECT DISTINCT
     clean_timestamp,
