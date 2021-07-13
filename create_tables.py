@@ -35,6 +35,8 @@ def main():
     drop_tables(cur, conn)
     create_tables(cur, conn)
 
+    print("Tables created")
+
     conn.close()
 
 

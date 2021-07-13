@@ -35,6 +35,8 @@ def main():
     load_staging_tables(cur, conn)
     insert_tables(cur, conn)
 
+    print("Data successfully loaded into Redshift")
+
     conn.close()
 
 

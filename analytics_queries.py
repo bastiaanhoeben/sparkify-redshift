@@ -1,5 +1,6 @@
 import configparser
 import psycopg2
+import pandas as pd
 from aws_config import get_cluster_endpoint
 
 
@@ -7,13 +8,13 @@ from aws_config import get_cluster_endpoint
 top_artists = ("""
 SELECT a.name, count(*) AS songplays
 FROM songplays AS s
-INNER JOIN artist AS a
+INNER JOIN artists AS a
 ON s.artist_id = a.artist_id
 INNER JOIN time AS t
 ON s.start_time = t.start_time
 WHERE t.hour BETWEEN 18 AND 23
 GROUP BY a.name
-ORDER BY 2
+ORDER BY 2 DESC
 LIMIT 10;
 """)
 
@@ -23,7 +24,8 @@ SELECT u.gender, s.level, count(*) AS songplays
 FROM songplays AS s
 INNER JOIN users AS u
 ON s.user_id = u.user_id
-GROUP BY 1,2;
+GROUP BY 1, 2
+ORDER BY 1, 2;
 """)
 
 # List of queries to be run against database
@@ -33,9 +35,16 @@ analytics_queries = [top_artists, level_plays]
 def run_analytics_queries(cur, conn):
     """Successively runs analytic queries."""
     
+    output = []
+
     for query in analytics_queries:
         cur.execute(query)
-        conn.commit()
+        records = cur.fetchall()
+        column_names = list(map(lambda x: x[0], cur.description))
+        output.append(pd.DataFrame(records, columns=column_names))
+    
+    for table in output:
+        print(table, end='\n\n')
 
 
 def main():
