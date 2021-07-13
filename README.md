@@ -62,7 +62,6 @@ The JSON files of the log (events) dataset contain entries (rows) that adhere to
 }
 ```
 
-
 ### Data model
 
 The data is modelled according to the start schema depicted below. The songplays table hereby constitutes the fact table, while the users, artists, songs and time tables are the dimensional tables.
