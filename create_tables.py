@@ -5,12 +5,26 @@ from aws_config import get_cluster_endpoint
 
 
 def drop_tables(cur, conn):
+    """Drops all database tables.
+
+    Args:
+        cur: Database cursor
+        con: Database connection instance
+    """
+    
     for query in drop_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def create_tables(cur, conn):
+    """Creates database tables.
+
+    Args:
+        cur: Database cursor
+        con: Database connection instance
+    """
+    
     for query in create_table_queries:
         cur.execute(query)
         conn.commit()

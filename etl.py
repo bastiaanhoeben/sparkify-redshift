@@ -5,12 +5,26 @@ from aws_config import get_cluster_endpoint
 
 
 def load_staging_tables(cur, conn):
+    """Copies S3 raw data into staging tables.
+
+    Args:
+        cur: Database cursor
+        con: Database connection instance    
+        """
+    
     for query in copy_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def insert_tables(cur, conn):
+    """Loads data from staging tables into fact and dimensional tables.
+    
+    Args:
+        cur: Database cursor
+        con: Database connection instance    
+    """
+   
     for query in insert_table_queries:
         cur.execute(query)
         conn.commit()
