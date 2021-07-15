@@ -179,14 +179,27 @@ INSERT INTO users (
     gender,
     level
 )
+WITH cte AS
+(
+    SELECT 
+        userId, 
+        firstName, 
+        lastName, 
+        gender, 
+        level,
+        ROW_NUMBER() OVER(PARTITION BY userId ORDER BY ts DESC) AS rank
+    FROM staging_events
+    WHERE page = 'NextSong'
+        AND userId IS NOT NULL
+)
 SELECT DISTINCT
     userId,
     firstName,
     lastName,
     gender,
     level
-FROM staging_events
-WHERE page = 'NextSong'
+FROM cte
+WHERE rank = 1
 """)
 
 song_table_insert = ("""
