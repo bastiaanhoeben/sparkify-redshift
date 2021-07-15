@@ -1,12 +1,12 @@
 import configparser
-from aws_config import create_iam_role, get_role_arn
+from aws_config import get_role_arn
 
 
 # CONFIG
 config = configparser.ConfigParser()
 config.read('dwh.cfg')
 
-LOG_DATA, LOG_JSONPATH, SONG_DATA = config['S3'].values()
+S3_REGION, LOG_DATA, LOG_JSONPATH, SONG_DATA = config['S3'].values()
 KEY, SECRET, REGION = config['AWS'].values()
 IAM_ROLE_NAME = config.get('IAM_ROLE', 'IAM_ROLE_NAME')
 role_arn = get_role_arn(REGION, KEY, SECRET, IAM_ROLE_NAME)
@@ -132,7 +132,7 @@ FROM {}
 IAM_ROLE '{}'
 REGION '{}'
 JSON {};
-""").format(LOG_DATA, role_arn, REGION, LOG_JSONPATH)
+""").format(LOG_DATA, role_arn, S3_REGION, LOG_JSONPATH)
 
 staging_songs_copy = ("""
 COPY staging_songs
@@ -140,7 +140,7 @@ FROM {}
 IAM_ROLE '{}'
 REGION '{}'
 JSON 'auto';
-""").format(SONG_DATA, role_arn, REGION)
+""").format(SONG_DATA, role_arn, S3_REGION)
 
 # FINAL TABLES
 
