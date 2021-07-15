@@ -36,7 +36,7 @@ CREATE TABLE staging_events (
     location VARCHAR,
     method VARCHAR,
     page VARCHAR,
-    registration FLOAT,
+    registration VARCHAR,
     sessionId INT,
     song VARCHAR,
     status INT,
